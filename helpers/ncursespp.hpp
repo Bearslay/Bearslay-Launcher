@@ -10,101 +10,101 @@
 #include <cmath>
 #include <ctime>
 
+/// @brief Unknown mouse input
+#define M_UNKNOWN -1
+/// @brief Mouse 1 (Left Click) being pressed
+#define M1_PRESS 0
+/// @brief Mouse 1 (Left Click) being released
+#define M1_RELEASE 1
+/// @brief Mouse 1 (Left Click) being clicked once quickly
+#define M1_CLICK 2
+/// @brief Mouse 1 (Left Click) being clicked twice quickly
+#define M1_DCLICK 3
+/// @brief Mouse 1 (Left Click) being clicked thrice quickly
+#define M1_TCLICK 4
+/// @brief Mouse 2 (Right Click) being pressed
+#define M2_PRESS 5
+/// @brief Mouse 2 (Right Click) being released
+#define M2_RELEASE 6
+/// @brief Mouse 2 (Right Click) being clicked once quickly
+#define M2_CLICK 7
+/// @brief Mouse 2 (Right Click) being clicked twice quickly
+#define M2_DCLICK 8
+/// @brief Mouse 2 (Right Click) being clicked thrice quickly
+#define M2_TCLICK 9
+/// @brief Mouse 3 (Middle Click) being pressed
+#define M3_PRESS 10
+/// @brief Mouse 3 (Middle Click) being released
+#define M3_RELEASE 11
+/// @brief Mouse 3 (Middle Click) being clicked once quickly
+#define M3_CLICK 12
+/// @brief Mouse 3 (Middle Click) being clicked twice quickly
+#define M3_DCLICK 13
+/// @brief Mouse 3 (Middle Click) being clicked thrice quickly
+#define M3_TCLICK 14
+/// @brief Mouse 4 (Scroll Up) being pressed (ACTUAL INPUT - USE THIS FOR SCROLLING)
+#define M4_PRESS 15
+/// @brief Mouse 4 (Scroll Up) being released (DOESN'T DO ANYTHING)
+#define M4_RELEASE 16
+/// @brief Mouse 4 (Scroll Up) being clicked once quickly (DOESN'T DO ANYTHING)
+#define M4_CLICK 17
+/// @brief Mouse 4 (Scroll Up) being clicked twice quickly (DOESN'T DO ANYTHING)
+#define M4_DCLICK 18
+/// @brief Mouse 4 (Scroll Up) being clicked thrice quickly (DOESN'T DO ANYTHING)
+#define M4_TCLICK 19
+/// @brief Mouse 5 (Scroll Down) being pressed (ACTUAL INPUT - USE THIS FOR SCROLLING)
+#define M5_PRESS 20
+/// @brief Mouse 5 (Scroll Down) being released (DOESN'T DO ANYTHING)
+#define M5_RELEASE 21
+/// @brief Mouse 5 (Scroll Down) being clicked once quickly (DOESN'T DO ANYTHING)
+#define M5_CLICK 22
+/// @brief Mouse 5 (Scroll Down) being clicked twice quickly (DOESN'T DO ANYTHING)
+#define M5_DCLICK 23
+/// @brief Mouse 5 (Scroll Down being clicked thrice quickly (DOESN'T DO ANYTHING)
+#define M5_TCLICK 24
+
+/// @brief Light box drawing characters with square corners
+#define LIGHT_HARD 0
+/// @brief Light box drawing characters with rounded corners
+#define LIGHT_SOFT 1
+/// @brief Heavy box drawing characters in both the horiztonal and vertical directions
+#define HEAVY_BOTH 2
+/// @brief Heavy box drawing characters in the horiztonal direction, light in the vertical directions
+#define HEAVY_HORIZONTAL 3
+/// @brief Heavy box drawing characters in the vertical direction, light in the horizontal directions
+#define HEAVY_VERTICAL 4
+/// @brief Doubled box drawing characters in both the horizontal and vertical directions
+#define DOUBLED_BOTH 5
+/// @brief Doubled box drawing characters in the horiztonal direction, light in the vertical directions
+#define DOUBLED_HORIZTONAL 6
+/// @brief Doubled box drawing characters in the vertical direction, light in the horizontal directions
+#define DOUBLED_VERTICAL 7
+
+/// @brief Solid Line
+#define DASHED_NONE 0
+/// @brief Dashed line with one gap per character
+#define DASHED_DOUBLE 1
+/// @brief Dashed line with two gaps per character
+#define DASHED_TRIPLE 2
+/// @brief Dashed line with three gap per character
+#define DASHED_QUADRUPLE 3
+/// @brief Half of a solid line used as a dashed line (left/up)
+#define DASHED_SINGLE_1 4
+/// @brief Half of a solid line used as a dashed line (right/down)
+#define DASHED_SINGLE_2 5
+
+#define STYLE_NONE 0
+#define STYLE_LIGHT 1
+#define STYLE_HEAVY 2
+#define STYLE_DOUBLED 3
+
+#define DIR_UP 0
+#define DIR_DOWN 1
+#define DIR_LEFT 2
+#define DIR_RIGHT 3
+
 /// @brief ncursespp - A namespace that provides alternate classes/functions to the ones from ncurses.h designed to make programming TUIs easier; there is a decent chance that some functionality is missing from the original header file
 namespace npp {
-    /// @brief Unknown mouse input
-    #define M_UNKNOWN -1
-    /// @brief Mouse 1 (Left Click) being pressed
-    #define M1_PRESS 0
-    /// @brief Mouse 1 (Left Click) being released
-    #define M1_RELEASE 1
-    /// @brief Mouse 1 (Left Click) being clicked once quickly
-    #define M1_CLICK 2
-    /// @brief Mouse 1 (Left Click) being clicked twice quickly
-    #define M1_DCLICK 3
-    /// @brief Mouse 1 (Left Click) being clicked thrice quickly
-    #define M1_TCLICK 4
-    /// @brief Mouse 2 (Right Click) being pressed
-    #define M2_PRESS 5
-    /// @brief Mouse 2 (Right Click) being released
-    #define M2_RELEASE 6
-    /// @brief Mouse 2 (Right Click) being clicked once quickly
-    #define M2_CLICK 7
-    /// @brief Mouse 2 (Right Click) being clicked twice quickly
-    #define M2_DCLICK 8
-    /// @brief Mouse 2 (Right Click) being clicked thrice quickly
-    #define M2_TCLICK 9
-    /// @brief Mouse 3 (Middle Click) being pressed
-    #define M3_PRESS 10
-    /// @brief Mouse 3 (Middle Click) being released
-    #define M3_RELEASE 11
-    /// @brief Mouse 3 (Middle Click) being clicked once quickly
-    #define M3_CLICK 12
-    /// @brief Mouse 3 (Middle Click) being clicked twice quickly
-    #define M3_DCLICK 13
-    /// @brief Mouse 3 (Middle Click) being clicked thrice quickly
-    #define M3_TCLICK 14
-    /// @brief Mouse 4 (Scroll Up) being pressed (ACTUAL INPUT - USE THIS FOR SCROLLING)
-    #define M4_PRESS 15
-    /// @brief Mouse 4 (Scroll Up) being released (DOESN'T DO ANYTHING)
-    #define M4_RELEASE 16
-    /// @brief Mouse 4 (Scroll Up) being clicked once quickly (DOESN'T DO ANYTHING)
-    #define M4_CLICK 17
-    /// @brief Mouse 4 (Scroll Up) being clicked twice quickly (DOESN'T DO ANYTHING)
-    #define M4_DCLICK 18
-    /// @brief Mouse 4 (Scroll Up) being clicked thrice quickly (DOESN'T DO ANYTHING)
-    #define M4_TCLICK 19
-    /// @brief Mouse 5 (Scroll Down) being pressed (ACTUAL INPUT - USE THIS FOR SCROLLING)
-    #define M5_PRESS 20
-    /// @brief Mouse 5 (Scroll Down) being released (DOESN'T DO ANYTHING)
-    #define M5_RELEASE 21
-    /// @brief Mouse 5 (Scroll Down) being clicked once quickly (DOESN'T DO ANYTHING)
-    #define M5_CLICK 22
-    /// @brief Mouse 5 (Scroll Down) being clicked twice quickly (DOESN'T DO ANYTHING)
-    #define M5_DCLICK 23
-    /// @brief Mouse 5 (Scroll Down being clicked thrice quickly (DOESN'T DO ANYTHING)
-    #define M5_TCLICK 24
-
-    /// @brief Light box drawing characters with square corners
-    #define LIGHT_HARD 0
-    /// @brief Light box drawing characters with rounded corners
-    #define LIGHT_SOFT 1
-    /// @brief Heavy box drawing characters in both the horiztonal and vertical directions
-    #define HEAVY_BOTH 2
-    /// @brief Heavy box drawing characters in the horiztonal direction, light in the vertical directions
-    #define HEAVY_HORIZONTAL 3
-    /// @brief Heavy box drawing characters in the vertical direction, light in the horizontal directions
-    #define HEAVY_VERTICAL 4
-    /// @brief Doubled box drawing characters in both the horizontal and vertical directions
-    #define DOUBLED_BOTH 5
-    /// @brief Doubled box drawing characters in the horiztonal direction, light in the vertical directions
-    #define DOUBLED_HORIZTONAL 6
-    /// @brief Doubled box drawing characters in the vertical direction, light in the horizontal directions
-    #define DOUBLED_VERTICAL 7
-
-    /// @brief Solid Line
-    #define DASHED_NONE 0
-    /// @brief Dashed line with one gap per character
-    #define DASHED_DOUBLE 1
-    /// @brief Dashed line with two gaps per character
-    #define DASHED_TRIPLE 2
-    /// @brief Dashed line with three gap per character
-    #define DASHED_QUADRUPLE 3
-    /// @brief Half of a solid line used as a dashed line (left/up)
-    #define DASHED_SINGLE_1 4
-    /// @brief Half of a solid line used as a dashed line (right/down)
-    #define DASHED_SINGLE_2 5
-
-    #define STYLE_NONE 0
-    #define STYLE_LIGHT 1
-    #define STYLE_HEAVY 2
-    #define STYLE_DOUBLED 3
-
-    #define DIR_UP 0
-    #define DIR_DOWN 1
-    #define DIR_LEFT 2
-    #define DIR_RIGHT 3
-
     /// @brief Default values that can be changed in place of providing parameter arguments for many functions
     static struct {
         /// @brief Color pair
@@ -1612,7 +1612,7 @@ namespace npp {
             /// @param color Color pair to use when drawing the line
             /// @param mergeable Whether the line will be able to be merged with future lines
             /// @param canMerge Whether the line will be able to merge with pre-existing box-drawing characters
-            void dbox(std::pair<unsigned char, unsigned char> style = Defaults.Style, unsigned char color = Defaults.Color, bool mergeable = Defaults.Mergeable, bool canMerge = Defaults.CanMerge) {dbox(0, 0, DimY, DimX, style, color, false, false);}
+            void dbox(std::pair<unsigned char, unsigned char> style = Defaults.Style, unsigned char color = Defaults.Color, bool mergeable = Defaults.Mergeable, bool canMerge = Defaults.CanMerge) {dbox(0, 0, DimY - 1, DimX - 1, style, color, false, true);}
             /// @brief Draw Centered Box - Draw a box - center
             /// @param y y-position (row) of the center of the box
             /// @param x x-position (col) of the center of the box
@@ -1690,6 +1690,84 @@ namespace npp {
             /// @returns A pair consisting of a y-dimension (rows) and x-dimension (cols)
             std::pair<unsigned short, unsigned short> gGridDims(unsigned short rows, unsigned short cols, unsigned short celly, unsigned short cellx) {return {rows * celly + (rows + 1), cols * cellx + (cols + 1)};}
     } mwin;
+
+    class Button {
+        private:
+            /// @brief Y-dimension (rows) of the button
+            unsigned short DimY;
+            /// @brief X-dimension (cols) of the button
+            unsigned short DimX;
+            /// @brief Y-position (row) of the top-left corner of the button
+            unsigned short PosY;
+            /// @brief X-position (col) of the top-left corner of the button
+            unsigned short PosX;
+
+            bool Clickable = true;
+
+            std::vector<char> Targets;
+
+            /// @brief Check Coordinate - Check to see if the mouse position is within the button's bounds
+            /// @returns True if the mouse is in bounds, false if it is out of bounds
+            bool checkCoord() {return !(Mouse.gy() < PosY || Mouse.gy() >= PosY + DimY || Mouse.gx() < PosX || Mouse.gx() >= PosX + DimX);}
+
+        public:
+            Button(unsigned short y, unsigned short x, unsigned short dimy, unsigned short dimx) {
+                // Prevent the button from being made out of bounds (and automatically resize ones that may)
+                PosY = (y < 0 || y >= LINES) ? 0 : y;
+                PosX = (x < 0 || x >= COLS) ? 0 : x;
+                DimY = (dimy < 1 || LINES - dimy - y < 0) ? LINES - y : dimy;
+                DimX = (dimx < 1 || COLS - dimx - x < 0) ? COLS - x : dimx;
+            }
+
+            /// @brief Get Y-Dimension - Get the y-dimension (rows) of a button
+            /// @returns The y-dimension (rows) of a button
+            const unsigned short gdimy() {return DimY;}
+            /// @brief Get X-Dimension - Get the x-dimension (cols) of a button
+            /// @returns The x-dimension (cols) of a button
+            const unsigned short gdimx() {return DimX;}
+            /// @brief Get Y-Position - Get the y-position (row) of the top-left corner of a button
+            /// @returns The y-dimension (row) of the top-left corner of a button
+            const unsigned short gposy() {return PosY;}
+            /// @brief Get X-Position - Get the x-position (col) of the top-left corner of a button
+            /// @returns The x-dimension (col) of the top-left corner of a button
+            const unsigned short gposx() {return PosX;}
+    
+            /// @brief Check Click - Check to see if the button was pressed or not
+            /// @returns The detected mouse event if the button was pressed or M_UNKNOWN (-1) if the button wasn't
+            const char cclick() {
+                if (!Clickable || !checkCoord() || Mouse.ginput() == M_UNKNOWN) {return M_UNKNOWN;}
+
+                for (unsigned char i = 0; i < Targets.size(); i++) {
+                    if (Mouse.ginput() == Targets[i]) {return Targets[i];}
+                }
+
+                return M_UNKNOWN;
+            }
+
+            bool addTarget(char target) {
+                if (target < 0 || target >= 25) {return false;}
+
+                for (unsigned char i = 0; i < Targets.size(); i++) {
+                    if (target == Targets[i]) {return true;}
+                }
+
+                Targets.emplace_back(target);
+                return true;
+            }
+
+            bool removeTarget(char target) {
+                if (target < 0 || target >= 25) {return false;}
+
+                for (unsigned char i = 0; i < Targets.size(); i++) {
+                    if (target == Targets[i]) {
+                        Targets.erase(Targets.begin() + i);
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+    };
 
     /// @brief Initialize - Acts as the ncursespp version of initscr() with a few other initializations; end() must be called at the end of a program
     /// @param useMouse Whether to set up the ability to take mouse inputs or not
