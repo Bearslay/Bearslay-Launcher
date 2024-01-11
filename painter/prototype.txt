@@ -1,0 +1,60 @@
++-+ Painter +-+ Editing *pic1 +-+ Canvas Size: 080x032 chars (x, y) +-+ Guides: On +-------------------------------------+ // guides will be toggled with 'g'
+| +--------------------------------------------------+-----------------------------+ +---------------------------------+ |
+| |                                                  |                             | | Using Color (999, 999, 999) ### | | // only 250 colors can be drawn with
+| |                                                  |                             | | - - - - - - - - - - - - - - - - | | // 1/5 = black, reserved for bg
+| |                                                  |                             | | Key    Num    R    G    B       | | // 2/5 = white, reserved for display/boxes
+| |                                                  |                             | | '1' < [001] (999, 999, 999) # > | | // 3/5 something else will probably come up
+| |                                                  |                             | | '2'   [002] (999, 999, 999) #   | | // 4/5 = cyan, reserved for cursor
+| |                                                  |                             | | '3'   [003] (999, 999, 999) #   | | // 5/5 = any, reserved for color editing display
+| |                                                  |                             | | '4'   [004] (999, 999, 999) #   | |
+| |                                                  |                             | | '5'   [005] (999, 999, 999) #   | |
+| |                                                  |                             | | '6'   [006] (999, 999, 999) #   | |
+| |                                                  |                             | | '7'   [007] (999, 999, 999) #   | |
+| |                                                  |                             | | '8'   [008] (999, 999, 999) #   | |
+| |                                                  |                             | | '9'   [009] (999, 999, 999) #   | |
+| |                                        (051, 014)|                             | | '0'   [010] (999, 999, 999) #   | |
+| +--------------------------------------------------□-----------------------------+ |                                 | |
+| |                                                  |                             | | Listing 001->010/250 | Pg 00/25 | |
+| |                                                  |                             | | - - - - - - - - - - - - - - - - | | | - - - - - - - - - - - - - - - - |
+| |                                                  |                             | | Editing Color #000 | ### -> ### | | |          Not Currently          | 
+| |                                                  |                             | | Step: 000 (R 999, G 999, B 999) | | |         Editing A Color         |
+| |                                                  |                             | +---------------------------------+ | +---------------------------------+
+| |                                                  |                             | +---------------------------------+ |
+| |                                                  |                             | | Using the Brush Tool            | |
+| |                                                  |                             | + - - - - - - - - -+- - - - - - - + |
+| |                                                  |                             | | Key     Tool     | Size         | | // This panel will be accesses with 't'
+| |                                                  |                             | | 'w' < [Brush ] > | x < - 00 + > | | // Size will max out at 25
+| |                                                  |                             | | 'e'   [Eraser]   | y < - 00 + > | | // Toggle is indicated by bolded text
+| |                                                  |                             | | 'c'   [Stamp ]   | Toggled      | | // Stamp will copy an area, then paste it
+| |                                                  |                             | | 's'   [Select]   | < On/Off >   | | // Select allows you to select a rectangular area and then fill it, erase it, copy it, or move it
+| |                                                  |                             | | 'v'   [Move  ]   | Step         | | // Move a selected area
+| |                                                  |                             | | 'a'   [Picker]   | x < - 00 + > | | // Color picker, will try to find a color in the list that matches the rgb values, but if it can;t it will set the current color to those values
+| |                                                  |                             | | 'f'   [Line  ]   | y < - 00 + > | |
+| |                                                  |                             | +------------------+--------------+ |
+| |                                                  |                             |                                     |
+| +--------------------------------------------------+-----------------------------+                                     |
++------------------------------------------------------------------------------------------------------------------------+
+
+// Brush         // Eraser        // Stamp        
++--------------+ +--------------+ +--------------+
+| Size         | | Size         | | Mode         |
+| x < - 00 + > | | x < - 00 + > | | < Cpy/Pste > |
+| y < - 00 + > | | y < - 00 + > | | Toggled      |
+| Toggled      | | Toggled      | | < On/Off >   |
+| < On/Off >   | | < On/Off >   | | Stamp Size   |
+| Step         | | Step         | | (x, y) 00x00 |
+| x < - 00 + > | | x < - 00 + > | |              |
+| y < - 00 + > | | y < - 00 + > | |              |
++--------------+ +--------------+ +--------------+
+
+// Select        // Move          // Picker       
++--------------+ +--------------+ +--------------+
+| Start (x, y) | | Step         | | Old Color #  |
+| x < - 00 + > | | x < - 00 + > | | 999 999 999  |
+| y < - 00 + > | | y < - 00 + > | | Index: #000  |
+| Dims (x, y)  | |              | | New Color #  |
+| x < - 00 + > | |              | | 999 999 999  |
+| y < - 00 + > | |              | | Index: #000  | // Could also be "Index: #N/A"
+|              | |              | | Overwrite    |
+|              | |              | | < All/Need > |
++--------------+ +--------------+ +--------------+

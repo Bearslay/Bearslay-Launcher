@@ -1,0 +1,30 @@
+Mediterranean_Avenue  :Old_Kent_Road         :Mdtn_Ave :OdKt_Rd :2  :4   :10  :30  :90   :160  :250  :60  :50  :30  :33  :0
+Baltic_Avenue         :Whitechapel_Road      :Balt_Ave :Wtcp_Rd :4  :8   :20  :60  :180  :320  :450  :60  :50  :30  :33  :0
+Oriental_Avenue       :The_Angel,_Islington  :Ortl_Ave :Agl_Isn :6  :12  :30  :90  :270  :400  :550  :100 :50  :50  :55  :1
+Vermont_Avenue        :Euston_Road           :Vrmt_Ave :Eutn_Rd :6  :12  :30  :90  :270  :400  :550  :100 :50  :50  :55  :1
+Connecticut_Avenue    :Pentonville_Road      :Cnct_Ave :Pnvl_Rd :8  :16  :40  :100 :300  :450  :600  :120 :50  :60  :66  :1
+St._Charles_Place     :Pall_Mall             :St.C_Plc :Pal_Mal :10 :20  :50  :150 :450  :625  :750  :140 :100 :70  :77  :2
+States_Avenue         :Whitehall             :Stts_Ave :Wtehall :10 :20  :50  :150 :450  :625  :750  :140 :100 :70  :77  :2
+Virginia_Avenue       :Northumberland_Avenue :Vgna_Ave :Nbd_Ave :12 :24  :60  :180 :500  :700  :900  :160 :100 :80  :88  :2
+St._James_Place       :Bow_Street            :St.J_Plc :Bow_St  :14 :28  :70  :200 :550  :750  :950  :180 :100 :90  :99  :3
+Tennessee_Avenue      :Marlborough_Street    :Tnse_Ave :Mlgh_St :14 :28  :70  :200 :550  :750  :950  :180 :100 :90  :99  :3
+New_York_Avenue       :Vine_Street           :NwYk_Ave :Vine_St :16 :32  :80  :220 :600  :800  :1000 :200 :100 :100 :110 :3
+Kentucky_Avenue       :Strand                :Ktky_Ave :Strand  :18 :36  :90  :250 :700  :875  :1050 :220 :150 :110 :121 :4
+Indiana_Avenue        :Fleet_Street          :Idna_Ave :Flet_St :18 :36  :90  :250 :700  :875  :1050 :220 :150 :110 :121 :4
+Illinois_Avenue       :Trafalgar_Square      :Ilns_Ave :Tfgr_Sq :20 :40  :100 :300 :750  :925  :1100 :240 :150 :120 :132 :4
+Atlantic_Avenue       :Leicester_Square      :Atlc_Ave :Lctr_Sq :22 :44  :110 :330 :800  :975  :1150 :260 :150 :130 :143 :5
+Ventnor_Avenue        :Coventry_Street       :Vntr_Ave :Cvty_St :22 :44  :110 :330 :800  :975  :1150 :260 :150 :130 :143 :5
+Marvin_Gardens        :Piccadilly            :Mvin_Gdn :Pccdlly :24 :48  :120 :360 :850  :1025 :1200 :280 :150 :140 :154 :5
+Pacific_Avenue        :Regent_Street         :Pcfc_Ave :Rgnt_St :26 :52  :130 :390 :900  :1100 :1275 :300 :200 :150 :165 :6
+North_Carolina_Avenue :Oxford_Street         :NtCl_Ave :Oxfd_St :26 :52  :130 :390 :900  :1100 :1275 :300 :200 :150 :165 :6
+Pennsylvania_Avenue   :Bond_Street           :Penn_Ave :Bond_St :28 :56  :150 :450 :1000 :1200 :1400 :320 :200 :160 :176 :6
+Park_Place            :Park_Lane             :Park_Plc :Park_Ln :35 :70  :175 :500 :1100 :1300 :1500 :350 :200 :175 :193 :7
+Boardwalk             :Mayfair               :Boardwlk :Mayfair :50 :100 :200 :600 :1400 :1700 :2000 :400 :200 :200 :220 :7
+
+Reading Railroad      :Kings Cross Station   :Rdg_RlRr :Kg_Cs_S :25 if 1, 50 if 2, 100 if 3, 200 if 4
+Pennsylvania Railroad :Marylebone Station    :Pen_RlRr :Mylbn_S :25 if 1, 50 if 2, 100 if 3, 200 if 4
+B&O Railroad          :Fenchurch St Station  :B&O_RlRr :Fn_St_S :25 if 1, 50 if 2, 100 if 3, 200 if 4
+Short Line            :Liverpool St Station  :Short_Ln :Lp_St_S :25 if 1, 50 if 2, 100 if 3, 200 if 4
+
+Electric Company      :Electric Company      :Elc_Comp :Elc_Cmp :4x Dice Roll if 1, 10x Dice Roll if 2
+Water Works           :Water Works:          :Watr_Wks :Wtr_Wks :4x Dice Roll if 1, 10x Dice Roll if 2
