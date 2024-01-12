@@ -256,6 +256,39 @@ namespace npp {
         };
     } Keys;
 
+    /// @brief Contain the data (character/color/attributes/etc) for each cell
+    struct Cell {
+        /// @brief Character contained in the cell
+        wchar_t Char = L' ';
+
+        /// @brief Color pair used for the cell
+        unsigned char Color = 1;
+
+        /// @brief Whether the cell is bolded or not
+        bool Bold = false;
+        /// @brief Whether the cell is italicized or not
+        bool Italic = false;
+        /// @brief Whether the cell is underlined or not
+        bool Under = false;
+        /// @brief Whether the cell is reversed (color pair) or not
+        bool Rev = false;
+        /// @brief Whether the cell blinks or not
+        bool Blink = false;
+        /// @brief Whether the cell is dim or not
+        bool Dim = false;
+        /// @brief Whether the cell is invisible or not
+        bool Invis = false;
+        /// @brief Whether the cell should stand out or not
+        bool Stand = false;
+        /// @brief Whether the cell should be protected or not
+        bool Prot = false;
+        /// @brief Whether the cell should use the alternate character set or not
+        bool Alt = false;
+
+        /// @brief If the cell is a line drawing character, whether it can be merged with or not
+        bool CanMerge = false;
+    };
+
     /// @brief Essentially the same as the MEVENT from ncurses, but with friendlier values
     class {
         private:
@@ -380,6 +413,115 @@ namespace npp {
             }
     } Mouse;
 
+    class Button {
+        private:
+            /// @brief Y-dimension (rows) of the button
+            unsigned short DimY;
+            /// @brief X-dimension (cols) of the button
+            unsigned short DimX;
+            /// @brief Y-position (row) of the top-left corner of the button
+            unsigned short PosY;
+            /// @brief X-position (col) of the top-left corner of the button
+            unsigned short PosX;
+
+            bool Clickable = true;
+
+            std::vector<char> Targets;
+
+            /// @brief Check Coordinate - Check to see if the mouse position is within the button's bounds
+            /// @returns True if the mouse is in bounds, false if it is out of bounds
+            bool checkCoord() {return !(Mouse.gy() < PosY || Mouse.gy() >= PosY + DimY || Mouse.gx() < PosX || Mouse.gx() >= PosX + DimX);}
+
+        public:
+            Button(unsigned short y, unsigned short x, unsigned short dimy, unsigned short dimx) {
+                // Prevent the button from being made out of bounds (and automatically resize ones that may)
+                PosY = (y < 0 || y >= LINES) ? 0 : y;
+                PosX = (x < 0 || x >= COLS) ? 0 : x;
+                DimY = (dimy < 1 || LINES - dimy - y < 0) ? LINES - y : dimy;
+                DimX = (dimx < 1 || COLS - dimx - x < 0) ? COLS - x : dimx;
+            }
+
+            void move(unsigned short y, unsigned short x) {
+                PosY = (y < 0) ? 0 : y;
+                PosY = (y + DimY > LINES) ? LINES - DimY : y;
+                PosX = (x < 0) ? 0 : x;
+                PosX = (x + DimX > COLS) ? COLS - DimX : x;
+            }
+
+            void resize(unsigned short dimy, unsigned short dimx) {
+                DimY = (dimy < 1) ? 1 : dimy;
+                DimY = (dimy + PosY > LINES) ? LINES - PosY : dimy;
+                DimX = (dimx < 1) ? 1 : dimx;
+                DimX = (dimx + PosX > COLS) ? COLS - PosX : dimx;
+            }
+
+            /// @brief Get Y-Dimension - Get the y-dimension (rows) of a button
+            /// @returns The y-dimension (rows) of a button
+            const unsigned short gdimy() {return DimY;}
+            /// @brief Get X-Dimension - Get the x-dimension (cols) of a button
+            /// @returns The x-dimension (cols) of a button
+            const unsigned short gdimx() {return DimX;}
+            /// @brief Get Y-Position - Get the y-position (row) of the top-left corner of a button
+            /// @returns The y-dimension (row) of the top-left corner of a button
+            const unsigned short gposy() {return PosY;}
+            /// @brief Get X-Position - Get the x-position (col) of the top-left corner of a button
+            /// @returns The x-dimension (col) of the top-left corner of a button
+            const unsigned short gposx() {return PosX;}
+    
+            void uclick(bool canClick) {canClick = canClick;}
+
+            /// @brief Check Click - Check to see if the button was pressed or not
+            /// @returns The detected mouse event if the button was pressed or M_UNKNOWN (-1) if the button wasn't
+            const char cclick() {
+                if (!Clickable || !checkCoord() || Mouse.ginput() == M_UNKNOWN) {return M_UNKNOWN;}
+
+                for (unsigned char i = 0; i < Targets.size(); i++) {
+                    if (Mouse.ginput() == Targets[i]) {return Targets[i];}
+                }
+
+                return M_UNKNOWN;
+            }
+
+            /// @brief Target Add - Add a mouse button for the button to look for
+            /// @param target A ncursespp mouse button (such as M1_CLICK)
+            /// @returns True if the new target is added to the list of targets, false if not
+            bool tadd(char target) {
+                if (target < 0 || target >= 25) {return false;}
+
+                for (unsigned char i = 0; i < Targets.size(); i++) {
+                    if (target == Targets[i]) {return true;}
+                }
+
+                Targets.emplace_back(target);
+                return true;
+            }
+
+            bool tremove(char target) {
+                if (target < 0 || target >= 25) {return false;}
+
+                for (unsigned char i = 0; i < Targets.size(); i++) {
+                    if (target == Targets[i]) {
+                        Targets.erase(Targets.begin() + i);
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            bool tset(std::vector<char> targets) {
+                std::vector<char> buff;
+
+                for (unsigned char i = 0; i < targets.size(); i++) {
+                    if (targets[i] < 0 || targets[i] >= 25) {return false;}
+                    buff.emplace_back(targets[i]);
+                }
+
+                Targets = buff;
+                return true;
+            }
+    };
+
     /// @brief The npp version of the WINDOW class from ncurses.h - comes with better support for unicode characters, much better line drawing capabilities, flashy rendering animations, and other fun bonuses
     class Window {
         private:
@@ -407,39 +549,7 @@ namespace npp {
             /// @brief If the user can skip wait() functions with an input
             bool CanSkip = true;
 
-            /// @brief Contain the data (character/color/attributes) for each cell
-            struct Cell {
-                /// @brief Character contained in the cell
-                wchar_t Char = L' ';
-
-                /// @brief Color pair used for the cell
-                unsigned char Color = 1;
-
-                /// @brief Whether the cell is bolded or not
-                bool Bold = false;
-                /// @brief Whether the cell is italicized or not
-                bool Italic = false;
-                /// @brief Whether the cell is underlined or not
-                bool Under = false;
-                /// @brief Whether the cell is reversed (color pair) or not
-                bool Rev = false;
-                /// @brief Whether the cell blinks or not
-                bool Blink = false;
-                /// @brief Whether the cell is dim or not
-                bool Dim = false;
-                /// @brief Whether the cell is invisible or not
-                bool Invis = false;
-                /// @brief Whether the cell should stand out or not
-                bool Stand = false;
-                /// @brief Whether the cell should be protected or not
-                bool Prot = false;
-                /// @brief Whether the cell should use the alternate character set or not
-                bool Alt = false;
-
-                /// @brief If the cell is a line drawing character, whether it can be merged with or not
-                bool CanMerge = false;
-            };
-            std::vector<std::vector<Cell>> Grid;
+            std::vector<std::vector<npp::Cell>> Grid;
 
             //
             // INTERFACING WITH NCURSES
@@ -626,16 +736,16 @@ namespace npp {
             /// @param dimx Length (cols) of the Window
             Window(unsigned short y = 0, unsigned short x = 0, unsigned short dimy = LINES, unsigned short dimx = COLS) {
                 // Prevent the window from being made out of bounds (and automatically resize ones that may)
-                y = (y < 0 || y >= LINES) ? 0 : y;
-                x = (x < 0 || x >= COLS) ? 0 : x;
+                y = (y < 0 || y > LINES) ? 0 : y;
+                x = (x < 0 || x > COLS) ? 0 : x;
                 dimy = (dimy < 1 || LINES - dimy - y < 0) ? LINES - y : dimy;
                 dimx = (dimx < 1 || COLS - dimx - x < 0) ? COLS - x : dimx;
 
-                Win = newwin(dimy, dimx, y, x);
                 PosY = y;
                 PosX = x;
                 DimY = dimy;
                 DimX = dimx;
+                Win = newwin(DimY, DimX, PosY, PosX);
 
                 for (unsigned short i = 0; i < DimY; i++) {
                     Grid.emplace_back();
@@ -662,6 +772,50 @@ namespace npp {
                 unsigned short y = win.gposy() + win.gdimy() / 2 - dimy / 2;
                 unsigned short x = win.gposx() + win.gdimx() / 2 - dimx / 2;
                 Window(y, x, dimy, dimx);
+            }
+
+            void move(unsigned short y, unsigned short x) {
+                PosY = (y < 0) ? 0 : y;
+                PosY = (y + DimY > LINES) ? LINES - DimY : y;
+                PosX = (x < 0) ? 0 : x;
+                PosX = (x + DimX > COLS) ? COLS - DimX : x;
+
+                // Remake the ncurses window
+                wclear(Win);
+                wrefresh(Win);
+                delwin(Win);
+                Win = newwin(DimY, DimX, PosY, PosX);
+            }
+
+            void resize(unsigned short dimy, unsigned short dimx) {
+                dimy = (dimy < 1) ? 1 : dimy;
+                dimy = (dimy + PosY > LINES) ? LINES - PosY : dimy;
+                dimx = (dimx < 1) ? 1 : dimx;
+                dimx = (dimx + PosX > COLS) ? COLS - PosX : dimx;
+
+                std::vector<std::vector<npp::Cell>> buff = Grid;
+                Grid.clear();
+
+                for (unsigned short i = 0; i < ((dimy > DimY) ? dimy : DimY); i++) {
+                    Grid.emplace_back();
+                    for (unsigned short j = 0; j < ((dimx > DimX) ? dimx : DimX); j++) {
+                        Grid[i].emplace_back();
+                    }
+                }
+                for (unsigned short i = 0; i < ((dimy > DimY) ? DimY : dimy); i++) {
+                    for (unsigned short j = 0; j < ((dimx > DimX) ? DimX : dimx); j++) {
+                        Grid[i][j] = buff[i][j];
+                    }
+                }
+
+                DimY = dimy;
+                DimX = dimx;
+
+                // Remake the ncurses window
+                wclear(Win);
+                wrefresh(Win);
+                delwin(Win);
+                Win = newwin(DimY, DimX, PosY, PosX);
             }
 
             //
@@ -836,6 +990,8 @@ namespace npp {
             /// @param x x-position (col) of the cell to scan
             /// @returns A true or false for if the cell can merge with other cells
             const bool smerge(unsigned short y, unsigned short x) {return !checkCoord(y, x) ? false : Grid[y][x].CanMerge;}
+
+            const npp::Cell scell(unsigned short y, unsigned short x) {return !checkCoord(y, x) ? npp::Cell() : Grid[y][x];}
 
             //
             // WRITING TO WINDOW
@@ -1690,100 +1846,6 @@ namespace npp {
             /// @returns A pair consisting of a y-dimension (rows) and x-dimension (cols)
             std::pair<unsigned short, unsigned short> gGridDims(unsigned short rows, unsigned short cols, unsigned short celly, unsigned short cellx) {return {rows * celly + (rows + 1), cols * cellx + (cols + 1)};}
     } mwin;
-
-    class Button {
-        private:
-            /// @brief Y-dimension (rows) of the button
-            unsigned short DimY;
-            /// @brief X-dimension (cols) of the button
-            unsigned short DimX;
-            /// @brief Y-position (row) of the top-left corner of the button
-            unsigned short PosY;
-            /// @brief X-position (col) of the top-left corner of the button
-            unsigned short PosX;
-
-            bool Clickable = true;
-
-            std::vector<char> Targets;
-
-            /// @brief Check Coordinate - Check to see if the mouse position is within the button's bounds
-            /// @returns True if the mouse is in bounds, false if it is out of bounds
-            bool checkCoord() {return !(Mouse.gy() < PosY || Mouse.gy() >= PosY + DimY || Mouse.gx() < PosX || Mouse.gx() >= PosX + DimX);}
-
-        public:
-            Button(unsigned short y, unsigned short x, unsigned short dimy, unsigned short dimx) {
-                // Prevent the button from being made out of bounds (and automatically resize ones that may)
-                PosY = (y < 0 || y >= LINES) ? 0 : y;
-                PosX = (x < 0 || x >= COLS) ? 0 : x;
-                DimY = (dimy < 1 || LINES - dimy - y < 0) ? LINES - y : dimy;
-                DimX = (dimx < 1 || COLS - dimx - x < 0) ? COLS - x : dimx;
-            }
-
-            /// @brief Get Y-Dimension - Get the y-dimension (rows) of a button
-            /// @returns The y-dimension (rows) of a button
-            const unsigned short gdimy() {return DimY;}
-            /// @brief Get X-Dimension - Get the x-dimension (cols) of a button
-            /// @returns The x-dimension (cols) of a button
-            const unsigned short gdimx() {return DimX;}
-            /// @brief Get Y-Position - Get the y-position (row) of the top-left corner of a button
-            /// @returns The y-dimension (row) of the top-left corner of a button
-            const unsigned short gposy() {return PosY;}
-            /// @brief Get X-Position - Get the x-position (col) of the top-left corner of a button
-            /// @returns The x-dimension (col) of the top-left corner of a button
-            const unsigned short gposx() {return PosX;}
-    
-            /// @brief Check Click - Check to see if the button was pressed or not
-            /// @returns The detected mouse event if the button was pressed or M_UNKNOWN (-1) if the button wasn't
-            const char cclick() {
-                if (!Clickable || !checkCoord() || Mouse.ginput() == M_UNKNOWN) {return M_UNKNOWN;}
-
-                for (unsigned char i = 0; i < Targets.size(); i++) {
-                    if (Mouse.ginput() == Targets[i]) {return Targets[i];}
-                }
-
-                return M_UNKNOWN;
-            }
-
-            /// @brief Target Add - Add a mouse button for the button to look for
-            /// @param target A ncursespp mouse button (such as M1_CLICK)
-            /// @returns True if the new target is added to the list of targets, false if not
-            bool tadd(char target) {
-                if (target < 0 || target >= 25) {return false;}
-
-                for (unsigned char i = 0; i < Targets.size(); i++) {
-                    if (target == Targets[i]) {
-                        Targets.emplace_back(target);
-                        break;
-                    }
-                }
-
-                return true;
-            }
-
-            bool tremove(char target) {
-                if (target < 0 || target >= 25) {return false;}
-
-                for (unsigned char i = 0; i < Targets.size(); i++) {
-                    if (target == Targets[i]) {
-                        Targets.erase(Targets.begin() + i);
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-
-            bool tset(std::vector<char> targets) {
-                std::vector<char> buff;
-
-                for (unsigned char i = 0; i < targets.size(); i++) {
-                    if (targets[i] < 0 || targets[i] >= 25) {return false;}
-                    buff.emplace_back(targets[i]);
-                }
-
-                return true;
-            }
-    };
 
     /// @brief Initialize - Acts as the ncursespp version of initscr() with a few other initializations; end() must be called at the end of a program
     /// @param useMouse Whether to set up the ability to take mouse inputs or not
