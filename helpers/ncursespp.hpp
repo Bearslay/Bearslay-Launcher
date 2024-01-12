@@ -1595,7 +1595,7 @@ namespace npp {
             /// @param mergeable Whether the line will be able to be merged with future lines
             /// @param canMerge Whether the line will be able to merge with pre-existing box-drawing characters
             void dbox(unsigned short y, unsigned short x, unsigned short dimy, unsigned short dimx, std::pair<unsigned char, unsigned char> style = Defaults.Style, unsigned char color = Defaults.Color, bool mergeable = Defaults.Mergeable, bool canMerge = Defaults.CanMerge) {                
-                if (!checkCoord(y, x) || !checkCoord(y + dimy, x + dimx) || dimy < 1 || dimx < 1) {return;}
+                if (!checkCoord(y, x) || !checkCoord(y + dimy - 1, x + dimx - 1) || dimy < 1 || dimx < 1) {return;}
 
                 // Special cases for when the dimensions of the box are 1
                 if (dimy == 1 && dimx == 1) {return wstr(y, x, L"□", color);}
@@ -1612,7 +1612,7 @@ namespace npp {
             /// @param color Color pair to use when drawing the line
             /// @param mergeable Whether the line will be able to be merged with future lines
             /// @param canMerge Whether the line will be able to merge with pre-existing box-drawing characters
-            void dbox(std::pair<unsigned char, unsigned char> style = Defaults.Style, unsigned char color = Defaults.Color, bool mergeable = Defaults.Mergeable, bool canMerge = Defaults.CanMerge) {dbox(0, 0, DimY - 1, DimX - 1, style, color, false, true);}
+            void dbox(std::pair<unsigned char, unsigned char> style = Defaults.Style, unsigned char color = Defaults.Color, bool mergeable = Defaults.Mergeable, bool canMerge = Defaults.CanMerge) {dbox(0, 0, DimY, DimX, style, color, true, true);}
             /// @brief Draw Centered Box - Draw a box - center
             /// @param y y-position (row) of the center of the box
             /// @param x x-position (col) of the center of the box
@@ -1744,18 +1744,23 @@ namespace npp {
                 return M_UNKNOWN;
             }
 
-            bool addTarget(char target) {
+            /// @brief Target Add - Add a mouse button for the button to look for
+            /// @param target A ncursespp mouse button (such as M1_CLICK)
+            /// @returns True if the new target is added to the list of targets, false if not
+            bool tadd(char target) {
                 if (target < 0 || target >= 25) {return false;}
 
                 for (unsigned char i = 0; i < Targets.size(); i++) {
-                    if (target == Targets[i]) {return true;}
+                    if (target == Targets[i]) {
+                        Targets.emplace_back(target);
+                        break;
+                    }
                 }
 
-                Targets.emplace_back(target);
                 return true;
             }
 
-            bool removeTarget(char target) {
+            bool tremove(char target) {
                 if (target < 0 || target >= 25) {return false;}
 
                 for (unsigned char i = 0; i < Targets.size(); i++) {
@@ -1766,6 +1771,17 @@ namespace npp {
                 }
 
                 return false;
+            }
+
+            bool tset(std::vector<char> targets) {
+                std::vector<char> buff;
+
+                for (unsigned char i = 0; i < targets.size(); i++) {
+                    if (targets[i] < 0 || targets[i] >= 25) {return false;}
+                    buff.emplace_back(targets[i]);
+                }
+
+                return true;
             }
     };
 
