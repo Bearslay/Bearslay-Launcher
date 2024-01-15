@@ -122,6 +122,8 @@ namespace npp {
         unsigned short Kerning = 1;
         unsigned short Leading = 1;
 
+        bool UsePadding = true;
+
         std::pair<unsigned char, unsigned char> Style = {LIGHT_HARD, DASHED_NONE};
         bool Mergeable = true;
         bool CanMerge = true;
@@ -413,115 +415,6 @@ namespace npp {
             }
     } Mouse;
 
-    class Button {
-        private:
-            /// @brief Y-dimension (rows) of the button
-            unsigned short DimY;
-            /// @brief X-dimension (cols) of the button
-            unsigned short DimX;
-            /// @brief Y-position (row) of the top-left corner of the button
-            unsigned short PosY;
-            /// @brief X-position (col) of the top-left corner of the button
-            unsigned short PosX;
-
-            bool Clickable = true;
-
-            std::vector<char> Targets;
-
-            /// @brief Check Coordinate - Check to see if the mouse position is within the button's bounds
-            /// @returns True if the mouse is in bounds, false if it is out of bounds
-            bool checkCoord() {return !(Mouse.gy() < PosY || Mouse.gy() >= PosY + DimY || Mouse.gx() < PosX || Mouse.gx() >= PosX + DimX);}
-
-        public:
-            Button(unsigned short y, unsigned short x, unsigned short dimy, unsigned short dimx) {
-                // Prevent the button from being made out of bounds (and automatically resize ones that may)
-                PosY = (y < 0 || y >= LINES) ? 0 : y;
-                PosX = (x < 0 || x >= COLS) ? 0 : x;
-                DimY = (dimy < 1 || LINES - dimy - y < 0) ? LINES - y : dimy;
-                DimX = (dimx < 1 || COLS - dimx - x < 0) ? COLS - x : dimx;
-            }
-
-            void move(unsigned short y, unsigned short x) {
-                PosY = (y < 0) ? 0 : y;
-                PosY = (y + DimY > LINES) ? LINES - DimY : y;
-                PosX = (x < 0) ? 0 : x;
-                PosX = (x + DimX > COLS) ? COLS - DimX : x;
-            }
-
-            void resize(unsigned short dimy, unsigned short dimx) {
-                DimY = (dimy < 1) ? 1 : dimy;
-                DimY = (dimy + PosY > LINES) ? LINES - PosY : dimy;
-                DimX = (dimx < 1) ? 1 : dimx;
-                DimX = (dimx + PosX > COLS) ? COLS - PosX : dimx;
-            }
-
-            /// @brief Get Y-Dimension - Get the y-dimension (rows) of a button
-            /// @returns The y-dimension (rows) of a button
-            const unsigned short gdimy() {return DimY;}
-            /// @brief Get X-Dimension - Get the x-dimension (cols) of a button
-            /// @returns The x-dimension (cols) of a button
-            const unsigned short gdimx() {return DimX;}
-            /// @brief Get Y-Position - Get the y-position (row) of the top-left corner of a button
-            /// @returns The y-dimension (row) of the top-left corner of a button
-            const unsigned short gposy() {return PosY;}
-            /// @brief Get X-Position - Get the x-position (col) of the top-left corner of a button
-            /// @returns The x-dimension (col) of the top-left corner of a button
-            const unsigned short gposx() {return PosX;}
-    
-            void uclick(bool canClick) {canClick = canClick;}
-
-            /// @brief Check Click - Check to see if the button was pressed or not
-            /// @returns The detected mouse event if the button was pressed or M_UNKNOWN (-1) if the button wasn't
-            const char cclick() {
-                if (!Clickable || !checkCoord() || Mouse.ginput() == M_UNKNOWN) {return M_UNKNOWN;}
-
-                for (unsigned char i = 0; i < Targets.size(); i++) {
-                    if (Mouse.ginput() == Targets[i]) {return Targets[i];}
-                }
-
-                return M_UNKNOWN;
-            }
-
-            /// @brief Target Add - Add a mouse button for the button to look for
-            /// @param target A ncursespp mouse button (such as M1_CLICK)
-            /// @returns True if the new target is added to the list of targets, false if not
-            bool tadd(char target) {
-                if (target < 0 || target >= 25) {return false;}
-
-                for (unsigned char i = 0; i < Targets.size(); i++) {
-                    if (target == Targets[i]) {return true;}
-                }
-
-                Targets.emplace_back(target);
-                return true;
-            }
-
-            bool tremove(char target) {
-                if (target < 0 || target >= 25) {return false;}
-
-                for (unsigned char i = 0; i < Targets.size(); i++) {
-                    if (target == Targets[i]) {
-                        Targets.erase(Targets.begin() + i);
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-
-            bool tset(std::vector<char> targets) {
-                std::vector<char> buff;
-
-                for (unsigned char i = 0; i < targets.size(); i++) {
-                    if (targets[i] < 0 || targets[i] >= 25) {return false;}
-                    buff.emplace_back(targets[i]);
-                }
-
-                Targets = buff;
-                return true;
-            }
-    };
-
     /// @brief The npp version of the WINDOW class from ncurses.h - comes with better support for unicode characters, much better line drawing capabilities, flashy rendering animations, and other fun bonuses
     class Window {
         private:
@@ -664,12 +557,15 @@ namespace npp {
             /// @brief Check Coordinate - Check if the coordinates are within the window or not
             /// @param pos Pair consisting of a y-position (row) and an x-position (col) of the coordinate to check
             /// @returns True if the coordinates are in the window, false if the coordinates aren't
-            bool checkCoord(std::pair<unsigned short, unsigned short> pos) {return !(pos.first < 0 || pos.first >= DimY || pos.second < 0 || pos.second >= DimX);}
+            bool checkCoord(std::pair<unsigned short, unsigned short> pos, bool usePadding) {
+                if (usePadding) {return !(pos.first < PadUp || pos.first >= DimY - PadDown || pos.second < PadLeft || pos.second >= DimX - PadRight);}
+                return !(pos.first < 0 || pos.first >= DimY || pos.second < 0 || pos.second >= DimX);
+            }
             /// @brief Check Coordinate - Check if the coordinates are within the window or not
             /// @param y y-position (row) of the coordinate to check
             /// @param x x-position (col) of the coordinate to check
             /// @returns True if the coordinates are in the window, false if the coordinates aren't
-            bool checkCoord(unsigned short y, unsigned short x) {return checkCoord({y, x});}
+            bool checkCoord(unsigned short y, unsigned short x, bool usePadding) {return checkCoord({y, x}, usePadding);}
 
             //
             // LINE DRAWING HELPERS
@@ -681,7 +577,7 @@ namespace npp {
             /// @param dir The direction to check: 0 = Up/North, 1 = Down/South, 2 = Left/West, 3 = Right/East
             /// @returns A number 0-3: 0 = Nothing, 1 = Light, 2 = Heavy, 3 = Double
             const unsigned char getConnectStyle(unsigned short y, unsigned short x, unsigned char dir) {
-                if (!checkCoord(y, x) || dir < 0 || dir > 3) {return 0;}
+                if (!checkCoord(y, x, false) || dir < 0 || dir > 3) {return 0;}
 
                 // If the targeted cell can't be merged with (which is the case for most cells)
                 // then there must not be something to connect with (even if the targeted cell is a box drawing element)
@@ -866,8 +762,6 @@ namespace npp {
             /// @param skippable Whether the window will allow the user to skip or not
             void uskip(bool skippable) {CanSkip = skippable;}
 
-            /// @brief Update Padding (Reset) - Reset the window's padding (sets all padding to zero)
-            void upreset() {PadUp = PadDown = PadLeft = PadRight = 0;}
             /// @brief Update Padding (Top) - Change how many padding spaces will be on the top of the window
             /// @param padding Amount of characters to pad
             void upup(unsigned short padding = 0) {PadUp = padding < 0 ? PadUp : padding;}
@@ -890,10 +784,10 @@ namespace npp {
 
             /// @brief Get Y-Dimension - Get the y-dimension (rows) of a window
             /// @returns The y-dimension (rows) of a window
-            const unsigned short gdimy() {return DimY;}
+            const unsigned short gdimy(bool padding = Defaults.UsePadding) {return DimY - (padding ? PadUp + PadDown : 0);}
             /// @brief Get X-Dimension - Get the x-dimension (cols) of a window
             /// @returns The x-dimension (cols) of a window
-            const unsigned short gdimx() {return DimX;}
+            const unsigned short gdimx(bool padding = Defaults.UsePadding) {return DimX - (padding ? PadLeft + PadRight : 0);}
             /// @brief Get Y-Position - Get the y-position (row) of the top-left corner of a window
             /// @returns The y-dimension (row) of the top-left corner of a window
             const unsigned short gposy() {return PosY;}
@@ -917,81 +811,81 @@ namespace npp {
             /// @param y y-position (row) of the cell to scan
             /// @param x x-position (col) of the cell to scan
             /// @returns A string (length of 1) representing a cell's character or a space if the requested cell doesn't exist
-            const wchar_t schar(unsigned short y, unsigned short x) {return !checkCoord(y, x) ? L' ' : Grid[y][x].Char;}
+            const wchar_t schar(unsigned short y, unsigned short x) {return !checkCoord(y, x, false) ? L' ' : Grid[y][x].Char;}
             
             /// @brief Scan Color - Get the color pair of a cell from a window
             /// @param y y-position (row) of the cell to scan
             /// @param x x-position (col) of the cell to scan
             /// @returns The number of the color pair a cell uses or the default pair for the window if the requested cell doesn't exist
-            const unsigned char scolor(unsigned short y, unsigned short x) {return !checkCoord(y, x) ? 1 : Grid[y][x].Color;}
+            const unsigned char scolor(unsigned short y, unsigned short x) {return !checkCoord(y, x, false) ? 1 : Grid[y][x].Color;}
             
             /// @brief Scan Bold - Get whether a cell from a window is bolded or not
             /// @param y y-position (row) of the cell to scan
             /// @param x x-position (col) of the cell to scan
             /// @returns A true or false for if the cell is bolded or the default state for the window if the requested cell doesn't exist
-            const bool sbold(unsigned short y, unsigned short x) {return !checkCoord(y, x) ? false : Grid[y][x].Bold;}
+            const bool sbold(unsigned short y, unsigned short x) {return !checkCoord(y, x, false) ? false : Grid[y][x].Bold;}
             
             /// @brief Scan Italic - Get whether a cell from a window is italicized or not
             /// @param y y-position (row) of the cell to scan
             /// @param x x-position (col) of the cell to scan
             /// @returns A true or false for if the cell is italicized or the default state for the window if the requested cell doesn't exist
-            const bool sitalic(unsigned short y, unsigned short x) {return !checkCoord(y, x) ? false : Grid[y][x].Italic;}
+            const bool sitalic(unsigned short y, unsigned short x) {return !checkCoord(y, x, false) ? false : Grid[y][x].Italic;}
             
             /// @brief Scan Underline - Get whether a cell from a window is underlined or not
             /// @param y y-position (row) of the cell to scan
             /// @param x x-position (col) of the cell to scan
             /// @returns A true or false for if the cell is underlined or the default state for the window if the requested cell doesn't exist
-            const bool sunder(unsigned short y, unsigned short x) {return !checkCoord(y, x) ? false : Grid[y][x].Under;}
+            const bool sunder(unsigned short y, unsigned short x) {return !checkCoord(y, x, false) ? false : Grid[y][x].Under;}
             
             /// @brief Scan Reverse - Get whether a cell from a window is reversed or not
             /// @param y y-position (row) of the cell to scan
             /// @param x x-position (col) of the cell to scan
             /// @returns A true or false for if the cell is reversed or the default state for the window if the requested cell doesn't exist
-            const bool srev(unsigned short y, unsigned short x) {return !checkCoord(y, x) ? false : Grid[y][x].Rev;}
+            const bool srev(unsigned short y, unsigned short x) {return !checkCoord(y, x, false) ? false : Grid[y][x].Rev;}
             
             /// @brief Scan Blink - Get whether a cell from a window is blinking or not
             /// @param y y-position (row) of the cell to scan
             /// @param x x-position (col) of the cell to scan
             /// @returns A true or false for if the cell is blinking or the default state for the window if the requested cell doesn't exist
-            const bool sblink(unsigned short y, unsigned short x) {return !checkCoord(y, x) ? false : Grid[y][x].Blink;}
+            const bool sblink(unsigned short y, unsigned short x) {return !checkCoord(y, x, false) ? false : Grid[y][x].Blink;}
             
             /// @brief Scan Dim - Get whether a cell from a window is dim or not
             /// @param y y-position (row) of the cell to scan
             /// @param x x-position (col) of the cell to scan
             /// @returns A true or false for if the cell is dim or the default state for the window if the requested cell doesn't exist
-            const bool sdim(unsigned short y, unsigned short x) {return !checkCoord(y, x) ? false : Grid[y][x].Dim;}
+            const bool sdim(unsigned short y, unsigned short x) {return !checkCoord(y, x, false) ? false : Grid[y][x].Dim;}
             
             /// @brief Scan Invisible - Get whether a cell from a window is invisible or not
             /// @param y y-position (row) of the cell to scan
             /// @param x x-position (col) of the cell to scan
             /// @returns A true or false for if the cell is invisible or the default state for the window if the requested cell doesn't exist
-            const bool sinvis(unsigned short y, unsigned short x) {return !checkCoord(y, x) ? false : Grid[y][x].Invis;}
+            const bool sinvis(unsigned short y, unsigned short x) {return !checkCoord(y, x, false) ? false : Grid[y][x].Invis;}
             
             /// @brief Scan Standout - Get whether a cell from a window is standing out or not
             /// @param y y-position (row) of the cell to scan
             /// @param x x-position (col) of the cell to scan
             /// @returns A true or false for if the cell is standing out or the default state for the window if the requested cell doesn't exist
-            const bool sstand(unsigned short y, unsigned short x) {return !checkCoord(y, x) ? false : Grid[y][x].Stand;}
+            const bool sstand(unsigned short y, unsigned short x) {return !checkCoord(y, x, false) ? false : Grid[y][x].Stand;}
             
             /// @brief Scan Protected - Get whether a cell from a window is protected or not
             /// @param y y-position (row) of the cell to scan
             /// @param x x-position (col) of the cell to scan
             /// @returns A true or false for if the cell is protected or the default state for the window if the requested cell doesn't exist
-            const bool sprot(unsigned short y, unsigned short x) {return !checkCoord(y, x) ? false : Grid[y][x].Prot;}
+            const bool sprot(unsigned short y, unsigned short x) {return !checkCoord(y, x, false) ? false : Grid[y][x].Prot;}
             
             /// @brief Scan Alt Char Set - Get whether a cell from a window is using the alternate character set or not
             /// @param y y-position (row) of the cell to scan
             /// @param x x-position (col) of the cell to scan
             /// @returns A true or false for if the cell is using the alternate character set or the default state for the window if the requested cell doesn't exist
-            const bool salt(unsigned short y, unsigned short x) {return  !checkCoord(y, x) ? false : Grid[y][x].Alt;}
-            
+            const bool salt(unsigned short y, unsigned short x) {return  !checkCoord(y, x, false) ? false : Grid[y][x].Alt;}
+
             /// @brief Scan Mergeability - Get whether a cell can merge with other cells (should only apply to cells that contain box drawing characters)
             /// @param y y-position (row) of the cell to scan
             /// @param x x-position (col) of the cell to scan
             /// @returns A true or false for if the cell can merge with other cells
-            const bool smerge(unsigned short y, unsigned short x) {return !checkCoord(y, x) ? false : Grid[y][x].CanMerge;}
+            const bool smerge(unsigned short y, unsigned short x) {return !checkCoord(y, x, false) ? false : Grid[y][x].CanMerge;}
 
-            const npp::Cell scell(unsigned short y, unsigned short x) {return !checkCoord(y, x) ? npp::Cell() : Grid[y][x];}
+            const npp::Cell scell(unsigned short y, unsigned short x) {return !checkCoord(y, x, false) ? npp::Cell() : Grid[y][x];}
 
             //
             // WRITING TO WINDOW
@@ -1017,8 +911,14 @@ namespace npp {
             /// @param offset Pair consisiting of a y-offset (rows) and an x-offset (cols) that changes the return value
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A pair consisting of a y-position (row) and an x-position (col) based off of the character's position and the inputted offset
-            std::pair<unsigned short, unsigned short> wcharp(std::pair<unsigned short, unsigned short> pos, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset) {
-                if (!checkCoord(pos)) {return pos;}
+            std::pair<unsigned short, unsigned short> wcharp(std::pair<unsigned short, unsigned short> pos, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool padding = Defaults.UsePadding) {
+                if (padding) {
+                    pos.first += PadUp;
+                    pos.second += PadLeft;
+                    if (!checkCoord(pos, true)) {return {pos.first - PadUp, pos.second - PadLeft};}
+                } else {
+                    if (!checkCoord(pos, false)) {return {pos.first, pos.second};}
+                }
 
                 std::vector<bool> attributes = extractAttributes(att);
 
@@ -1038,6 +938,7 @@ namespace npp {
 
                 Grid[pos.first][pos.second].CanMerge = false;
 
+                if (padding) {return {pos.first + offset.first - PadUp, pos.second + offset.second - PadLeft};}
                 return {pos.first + offset.first, pos.second + offset.second};
             }
             /// @brief Write Character, Return Position - Write a single character (wchar_t) to the window - short short pos, pair return
@@ -1049,7 +950,7 @@ namespace npp {
             /// @param offset Pair consisiting of a y-offset (rows) and an x-offset (cols) that changes the return value
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A pair consisting of a y-position (row) and an x-position (col) based off of the character's position and the inputted offset
-            std::pair<unsigned short, unsigned short> wcharp(unsigned short y, unsigned short x, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset) {return wcharp({y, x}, input, color, att, offset);}
+            std::pair<unsigned short, unsigned short> wcharp(unsigned short y, unsigned short x, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool padding = Defaults.UsePadding) {return wcharp({y, x}, input, color, att, offset, padding);}
             /// @brief Write Character, Return Y-Position - Write a single character to the window - pair pos, short return
             /// @param pos Pair consisting of a y-position (row) and an x-position (col) for the character to be written at
             /// @param input Wide character input to be written (unicode friendly)
@@ -1058,7 +959,7 @@ namespace npp {
             /// @param offset Pair consisiting of a y-offset (rows) and an x-offset (cols) that changes the return value
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A y-position (row) based off of the character's position and the inputted offset
-            unsigned short wchary(std::pair<unsigned short, unsigned short> pos, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset) {return wcharp(pos, input, color, att, offset).first;}
+            unsigned short wchary(std::pair<unsigned short, unsigned short> pos, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool padding = Defaults.UsePadding) {return wcharp(pos, input, color, att, offset, padding).first;}
             /// @brief Write Character, Return Y-Position - Write a single character to the window - short short pos, short return
             /// @param y y-position (row) of the character
             /// @param x x-position (col) of the character
@@ -1068,7 +969,7 @@ namespace npp {
             /// @param offset Pair consisiting of a y-offset (rows) and an x-offset (cols) that changes the return value
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A y-position (row) based off of the character's position and the inputted offset
-            unsigned short wchary(unsigned short y, unsigned short x, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset) {return wchary({y, x}, input, color, att, offset);}
+            unsigned short wchary(unsigned short y, unsigned short x, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool padding = Defaults.UsePadding) {return wchary({y, x}, input, color, att, offset, padding);}
             /// @brief Write Character, Return X-Position - Write a single character to the window - pair pos, short return
             /// @param pos Pair consisting of a y-position (row) and an x-position (col) for the character to be written at
             /// @param input Wide character input to be written (unicode friendly)
@@ -1077,7 +978,7 @@ namespace npp {
             /// @param offset Pair consisiting of a y-offset (rows) and an x-offset (cols) that changes the return value
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A x-position (col) based off of the character's position and the inputted offset
-            unsigned short wcharx(std::pair<unsigned short, unsigned short> pos, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset) {return wcharp(pos, input, color, att, offset).second;}
+            unsigned short wcharx(std::pair<unsigned short, unsigned short> pos, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool padding = Defaults.UsePadding) {return wcharp(pos, input, color, att, offset, padding).second;}
             /// @brief Write Character, Return X-Position - Write a single character to the window - short short pos, short return
             /// @param y y-position (row) of the character
             /// @param x x-position (col) of the character
@@ -1087,7 +988,7 @@ namespace npp {
             /// @param offset Pair consisiting of a y-offset (rows) and an x-offset (cols) that changes the return value
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A x-position (col) based off of the character's position and the inputted offset
-            unsigned short wcharx(unsigned short y, unsigned short x, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset) {return wcharx({y, x}, input, color, att, offset);}
+            unsigned short wcharx(unsigned short y, unsigned short x, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool padding = Defaults.UsePadding) {return wcharx({y, x}, input, color, att, offset, padding);}
             /// @brief Write Character, Return Nothing - Write a single character to the window - pair pos, no return
             /// @param pos Pair consisting of a y-position (row) and an x-position (col) for the character to be written at
             /// @param input Wide character input to be written (unicode friendly)
@@ -1095,7 +996,7 @@ namespace npp {
             /// @param att Set of attributes to apply (in any order): bo = Bold, it = Italic, un = Underline, re = Reverse, bl = Blink, di = Dim, in = Invisible, st = Standout, pr = Protected, al = Altset
             /// @param offset Pair consisiting of a y-offset (rows) and an x-offset (cols) that changes the return value
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
-            void wchar(std::pair<unsigned short, unsigned short> pos, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes) {wcharp(pos, input, color, att, {0, 0});}
+            void wchar(std::pair<unsigned short, unsigned short> pos, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, bool padding = Defaults.UsePadding) {wcharp(pos, input, color, att, {0, 0}, padding);}
             /// @brief Write Character, Return Nothing - Write a single character to the window - short short pos, no return
             /// @param y y-position (row) of the character
             /// @param x x-position (col) of the character
@@ -1104,7 +1005,7 @@ namespace npp {
             /// @param att Set of attributes to apply (in any order): bo = Bold, it = Italic, un = Underline, re = Reverse, bl = Blink, di = Dim, in = Invisible, st = Standout, pr = Protected, al = Altset
             /// @param offset Pair consisiting of a y-offset (rows) and an x-offset (cols) that changes the return value
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
-            void wchar(unsigned short y, unsigned short x, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes) {wchar({y, x}, input, color, att);}
+            void wchar(unsigned short y, unsigned short x, wchar_t input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, bool padding = Defaults.UsePadding) {wchar({y, x}, input, color, att, padding);}
 
             /// @brief Write String, Return Position - Write a string to the window - pair pos, pair return
             /// @param pos Pair consisting of a y-position (row) and an x-position (col) indicating the start of the string
@@ -1115,21 +1016,21 @@ namespace npp {
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A pair consisting of a y-position (row) and an x-position (col) based off of the last character of the string that was written and the inputted offset
-            std::pair<unsigned short, unsigned short> wstrp(std::pair<unsigned short, unsigned short> pos, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap) {
-                if (!checkCoord(pos)) {return pos;}
-            
+            std::pair<unsigned short, unsigned short> wstrp(std::pair<unsigned short, unsigned short> pos, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {
+                if (!checkCoord(pos, false)) {return {pos.first, pos.second};}
+
                 unsigned short yoffset = 0, xoffset = 0;
                 for (unsigned short i = 0; i < input.length(); i++) {
                     // Automatically wrap the string back to the starting x-pos
-                    if (pos.second + i - xoffset >= DimX) {
+                    if (pos.second + i - xoffset >= DimX - (padding ? PadLeft + PadRight : 0)) {
                         yoffset++;
-                        xoffset += ((wrap) ? (DimX - pos.second) : DimX);
+                        xoffset += ((wrap) ? (DimX - pos.second - (padding ? PadLeft + PadRight : 0)) : DimX - (padding ? PadLeft + PadRight : 0));
                     }
 
                     // Quit early if the string goes out of bounds
-                    if (!checkCoord(pos.first + yoffset, pos.second + i - xoffset)) {break;}
+                    if (!checkCoord(pos.first + yoffset, pos.second + i - xoffset, false)) {break;}
 
-                    wchar(pos.first + yoffset, pos.second + i - xoffset, input[i], color, att);
+                    wchar(pos.first + yoffset, pos.second + i - xoffset, input[i], color, att, padding);
                 }
 
                 return {pos.first + yoffset + offset.first, pos.second + input.length() - 1 - xoffset + offset.second};
@@ -1144,7 +1045,7 @@ namespace npp {
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A pair consisting of a y-position (row) and an x-position (col) based off of the last character of the string that was written and the inputted offset
-            std::pair<unsigned short, unsigned short> wstrp(unsigned short y, unsigned short x, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap) {return wstrp({y, x}, input, color, att, offset, wrap);}
+            std::pair<unsigned short, unsigned short> wstrp(unsigned short y, unsigned short x, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {return wstrp({y, x}, input, color, att, offset, wrap, padding);}
             /// @brief Write String, Return Y-Position - Write a string to the window - pair pos, short return
             /// @param pos Pair consisting of a y-position (row) and an x-position (col) indicating the start of the string
             /// @param input String input to be written (unicode friendly)
@@ -1154,7 +1055,7 @@ namespace npp {
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A y-position (row) based off of the last character of the string that was written and the inputted offset
-            unsigned short wstry(std::pair<unsigned short, unsigned short> pos, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap) {return wstrp(pos, input, color, att, offset, wrap).first;}
+            unsigned short wstry(std::pair<unsigned short, unsigned short> pos, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {return wstrp(pos, input, color, att, offset, wrap, padding).first;}
             /// @brief Write String, Return Y-Position - Write a string to the window - short short pos, short return
             /// @param y y-position (row) of the start of the string
             /// @param x x-position (col) of the start of the string
@@ -1165,7 +1066,7 @@ namespace npp {
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A y-position (row) based off of the last character of the string that was written and the inputted offset
-            unsigned short wstry(unsigned short y, unsigned short x, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap) {return wstry({y, x}, input, color, att, offset, wrap);}
+            unsigned short wstry(unsigned short y, unsigned short x, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {return wstry({y, x}, input, color, att, offset, wrap, padding);}
             /// @brief Write String, Return X-Position - Write a string to the window - pair pos, short return
             /// @param pos Pair consisting of a y-position (row) and an x-position (col) indicating the start of the string
             /// @param input String input to be written (unicode friendly)
@@ -1175,7 +1076,7 @@ namespace npp {
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A x-position (col) based off of the last character of the string that was written and the inputted offset
-            unsigned short wstrx(std::pair<unsigned short, unsigned short> pos, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap) {return wstrp(pos, input, color, att, offset, wrap).second;}
+            unsigned short wstrx(std::pair<unsigned short, unsigned short> pos, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {return wstrp(pos, input, color, att, offset, wrap, padding).second;}
             /// @brief Write String, Return X-Position - Write a string to the window - short short pos, short return
             /// @param y y-position (row) of the start of the string
             /// @param x x-position (col) of the start of the string
@@ -1186,7 +1087,7 @@ namespace npp {
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A x-position (col) based off of the last character of the string that was written and the inputted offset
-            unsigned short wstrx(unsigned short y, unsigned short x, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap) {return wstrx({y, x}, input, color, att, offset, wrap);}
+            unsigned short wstrx(unsigned short y, unsigned short x, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {return wstrx({y, x}, input, color, att, offset, wrap, padding);}
             /// @brief Write String, Return Nothing - Write a string to the window - pair pos, no return
             /// @param pos Pair consisting of a y-position (row) and an x-position (col) indicating the start of the string
             /// @param input String input to be written (unicode friendly)
@@ -1194,7 +1095,7 @@ namespace npp {
             /// @param att Set of attributes to apply (in any order): bo = Bold, it = Italic, un = Underline, re = Reverse, bl = Blink, di = Dim, in = Invisible, st = Standout, pr = Protected, al = Altset
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
-            void wstr(std::pair<unsigned short, unsigned short> pos, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, bool wrap = Defaults.Wrap) {wstrp(pos, input, color, att, {0, 0}, wrap);}
+            void wstr(std::pair<unsigned short, unsigned short> pos, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {wstrp(pos, input, color, att, {0, 0}, wrap, padding);}
             /// @brief Write String, Return Nothing - Write a string to the window - short short pos, no return
             /// @param y y-position (row) of the start of the string
             /// @param x x-position (col) of the start of the string
@@ -1203,7 +1104,7 @@ namespace npp {
             /// @param att Set of attributes to apply (in any order): bo = Bold, it = Italic, un = Underline, re = Reverse, bl = Blink, di = Dim, in = Invisible, st = Standout, pr = Protected, al = Altset
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
-            void wstr(unsigned short y, unsigned short x, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, bool wrap = Defaults.Wrap) {wstr({y, x}, input, color, att, wrap);}
+            void wstr(unsigned short y, unsigned short x, std::wstring input, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {wstr({y, x}, input, color, att, wrap, padding);}
 
             /// @brief Write Integer, Return Position - Write an integer to the window - pair pos, pair return
             /// @param pos Pair consisting of a y-position (row) and an x-position (col) indicating the start of the integer
@@ -1215,8 +1116,8 @@ namespace npp {
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A pair consisting of a y-position (row) and x-position (col) of the last character of the integer that was written
-            std::pair<unsigned short, unsigned short> wintp(std::pair<unsigned short, unsigned short> pos, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap) {
-                if (!checkCoord(pos)) {return pos;}
+            std::pair<unsigned short, unsigned short> wintp(std::pair<unsigned short, unsigned short> pos, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {
+                if (!checkCoord(pos, false)) {return pos;}
 
                 // Convert number to a string that can be written to the window
                 std::wstring num = std::to_wstring(input);
@@ -1227,7 +1128,7 @@ namespace npp {
                     num.insert(((input < 0) ? num.begin() + 1 : num.begin()), 1, '0');
                 }
 
-                return wstrp({pos.first, pos.second}, num, color, att, offset, wrap);
+                return wstrp({pos.first, pos.second}, num, color, att, offset, wrap, padding);
             }
             /// @brief Write Integer, Return Position - Write an integer to the window - short short pos, pair return
             /// @param y y-position (row) of the start of the integer
@@ -1240,7 +1141,7 @@ namespace npp {
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A pair consisting of the y-position (row) and x-position (col) of the last character of the integer that was written
-            std::pair<unsigned short, unsigned short> wintp(unsigned short y, unsigned short x, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap) {return wintp({y, x}, input, minWidth, color, att, offset, wrap);}
+            std::pair<unsigned short, unsigned short> wintp(unsigned short y, unsigned short x, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {return wintp({y, x}, input, minWidth, color, att, offset, wrap, padding);}
             /// @brief Write Integer, Return Y-Position - Write an integer to the window - pair pos, short return
             /// @param pos Pair consisting of a y-position (row) and an x-position (col) indicating the start of the integer
             /// @param input Integer input to be written
@@ -1251,7 +1152,7 @@ namespace npp {
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A y-position (row) based off of the last character of the integer that was written and the inputted offset
-            unsigned short winty(std::pair<unsigned short, unsigned short> pos, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap) {return wintp(pos, input, minWidth, color, att, offset, wrap).first;}
+            unsigned short winty(std::pair<unsigned short, unsigned short> pos, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {return wintp(pos, input, minWidth, color, att, offset, wrap, padding).first;}
             /// @brief Write Integer, Return Y-Position - Write an integer to the window - short short pos, short return
             /// @param y y-position (row) of the start of the integer
             /// @param x x-position (col) of the start of the integer
@@ -1263,7 +1164,7 @@ namespace npp {
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A y-position (row) based off of the last character of the integer that was written and the inputted offset
-            unsigned short winty(unsigned short y, unsigned short x, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap) {return winty({y, x}, input, minWidth, color, att, offset, wrap);}
+            unsigned short winty(unsigned short y, unsigned short x, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {return winty({y, x}, input, minWidth, color, att, offset, wrap, padding);}
             /// @brief Write Integer, Return X-Position - Write an integer to the window - pair pos, short return
             /// @param pos Pair consisting of a y-position (row) and an x-position (col) indicating the start of the integer
             /// @param input Integer input to be written
@@ -1274,7 +1175,7 @@ namespace npp {
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A x-position (col) based off of the last character of the integer that was written and the inputted offset
-            unsigned short wintx(std::pair<unsigned short, unsigned short> pos, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap) {return wintp(pos, input, minWidth, color, att, offset, wrap).second;}
+            unsigned short wintx(std::pair<unsigned short, unsigned short> pos, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {return wintp(pos, input, minWidth, color, att, offset, wrap, padding).second;}
             /// @brief Write Integer, Return X-Position - Write an integer to the window - short short pos, short return
             /// @param y y-position (row) of the start of the integer
             /// @param x x-position (col) of the start of the integer
@@ -1286,7 +1187,7 @@ namespace npp {
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A x-position (col) based off of the last character of the integer that was written and the inputted offset
-            unsigned short wintx(unsigned short y, unsigned short x, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap) {return wintx({y, x}, input, minWidth, color, att, offset, wrap);}
+            unsigned short wintx(unsigned short y, unsigned short x, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {return wintx({y, x}, input, minWidth, color, att, offset, wrap, padding);}
             /// @brief Write Integer, Return Nothing - Write an integer to the window - pair pos, no return
             /// @param pos Pair consisting of a y-position (row) and an x-position (col) indicating the start of the integer
             /// @param input Integer input to be written
@@ -1295,7 +1196,7 @@ namespace npp {
             /// @param att Set of attributes to apply (in any order): bo = Bold, it = Italic, un = Underline, re = Reverse, bl = Blink, di = Dim, in = Invisible, st = Standout, pr = Protected, al = Altset
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
-            void wint(std::pair<unsigned short, unsigned short> pos, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, bool wrap = Defaults.Wrap) {wintp(pos, input, minWidth, color, att, {0, 0}, wrap);}
+            void wint(std::pair<unsigned short, unsigned short> pos, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {wintp(pos, input, minWidth, color, att, {0, 0}, wrap, padding);}
             /// @brief Write Integer, Return Nothing - Write an integer to the window - short short pos, no return
             /// @param y y-position (row) of the start of the integer
             /// @param x x-position (col) of the start of the integer
@@ -1305,7 +1206,7 @@ namespace npp {
             /// @param att Set of attributes to apply (in any order): bo = Bold, it = Italic, un = Underline, re = Reverse, bl = Blink, di = Dim, in = Invisible, st = Standout, pr = Protected, al = Altset
             /// @param wrap Whether to wrap to starting x or not
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
-            void wint(unsigned short y, unsigned short x, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, bool wrap = Defaults.Wrap) {wint({y, x}, input, minWidth, color, att, wrap);}
+            void wint(unsigned short y, unsigned short x, int input, unsigned short minWidth = Defaults.MinWidth, unsigned char color = Defaults.Color, std::string att = Defaults.Attributes, bool wrap = Defaults.Wrap, bool padding = Defaults.UsePadding) {wint({y, x}, input, minWidth, color, att, wrap, padding);}
 
             /// @brief Write Matrix String, Return Position - Write a string to the window using the 6x6 matrix text - pair pos, pair return
             /// @param pos Pair consisting of a y-position (row) and an x-position (col) indicating the top-left corner of the first character of the string
@@ -1319,7 +1220,7 @@ namespace npp {
             /// @param usePadding Whether to disallow writing to cells that are in a padded region or not
             /// @returns A pair consisting of a y-position (row) and x-position (col) of the bottom-right corner of the last character of the text that was written
             std::pair<unsigned short, unsigned short> wmstrp(std::pair<unsigned short, unsigned short> pos, std::string input, unsigned char color = Defaults.Color, bool danglingLetters = Defaults.DanglingLetters, unsigned char kerning = Defaults.Kerning, unsigned char leading = Defaults.Leading, std::pair<unsigned short, unsigned short> offset = Defaults.Offset, bool wrap = Defaults.Wrap) {
-                if (!checkCoord(pos)) {return pos;}
+                if (!checkCoord(pos, false)) {return pos;}
                 kerning = kerning < 1 ? 1 : kerning;
                 leading = leading < 1 ? 1 : leading;
 
@@ -1336,7 +1237,7 @@ namespace npp {
                     posx = pos.second + i * (3 + kerning) - xoffset;
 
                     // Quit early if the string goes out of bounds
-                    if (!checkCoord(posy + 2, posx + 2)) {break;}
+                    if (!checkCoord(posy + 2, posx + 2, false)) {break;}
 
                     for (unsigned char j = 0; j < Keys.MatrixText6x6.size(); j++) {
                         if (input[i] == Keys.MatrixText6x6[j].first) {
@@ -1526,7 +1427,7 @@ namespace npp {
             /// @param full Whether to render the full line at once or not
             /// @param rev Whether to reverse the char-by-char direction of rendering (has no effect if full is true)
             /// @param millis Milliseconds to wait in between each line/character rendering
-            void rline(unsigned char dir = 0, bool full = true, bool rev = false, unsigned long millis = 20) {
+            void rline(unsigned char dir = DIR_UP, bool full = true, bool rev = false, unsigned long millis = 20) {
                 if (dir < 0 || dir > 3) {return rinst();}
 
                 unsigned short l1 = dir < 2 ? DimY : DimX;
@@ -1646,7 +1547,7 @@ namespace npp {
             /// @param mergeable Whether the line will be able to be merged with future lines
             /// @param canMerge Whether the line will be able to merge with pre-existing box-drawing characters
             void dline(unsigned short y, unsigned short x, unsigned short length, bool vertical = false, bool rev = false, std::pair<unsigned char, unsigned char> style = Defaults.Style, unsigned char color = Defaults.Color, bool mergeable = Defaults.Mergeable, bool canMerge = Defaults.CanMerge) {
-                if (!checkCoord(y, x) || length <= 0 || (y < 0 && rev) || (y >= DimY && !rev) || (x < 0 && rev) || (x >= DimX && !rev)) {return;}
+                if (!checkCoord(y, x, false) || length <= 0 || (y < 0 && rev) || (y >= DimY && !rev) || (x < 0 && rev) || (x >= DimX && !rev)) {return;}
                 style.first = (style.first < 0 || style.first >= 8) ? LIGHT_HARD : style.first;
                 style.second = (style.second < 0 || style.second >= 6) ? DASHED_NONE : style.second;
 
@@ -1685,7 +1586,7 @@ namespace npp {
 
                 for (unsigned short i = 0; i < length; i++) {
                     // Quit early if the line starts to venture out of the window
-                    if (!checkCoord(posy, posx)) {break;}
+                    if (!checkCoord(posy, posx, false)) {break;}
 
                     // Get the directions (connection styles) of the surrounding characters (for connecting to existing lines)
                     // This step is skipped if the line isn't suppsoed to merge with others
@@ -1751,7 +1652,7 @@ namespace npp {
             /// @param mergeable Whether the line will be able to be merged with future lines
             /// @param canMerge Whether the line will be able to merge with pre-existing box-drawing characters
             void dbox(unsigned short y, unsigned short x, unsigned short dimy, unsigned short dimx, std::pair<unsigned char, unsigned char> style = Defaults.Style, unsigned char color = Defaults.Color, bool mergeable = Defaults.Mergeable, bool canMerge = Defaults.CanMerge) {                
-                if (!checkCoord(y, x) || !checkCoord(y + dimy - 1, x + dimx - 1) || dimy < 1 || dimx < 1) {return;}
+                if (!checkCoord(y, x, false) || !checkCoord(y + dimy - 1, x + dimx - 1, false) || dimy < 1 || dimx < 1) {return;}
 
                 // Special cases for when the dimensions of the box are 1
                 if (dimy == 1 && dimx == 1) {return wstr(y, x, L"□", color);}
@@ -1794,7 +1695,7 @@ namespace npp {
             void dgrid(unsigned short y, unsigned short x, unsigned short rows, unsigned short cols, unsigned short celly, unsigned short cellx, std::pair<unsigned char, unsigned char> style = Defaults.Style, unsigned char color = Defaults.Color, bool mergeable = Defaults.Mergeable, bool canMerge = true) {
                 std::pair<unsigned short, unsigned short> dims = gGridDims(rows, cols, celly, cellx);
 
-                if (!checkCoord(y, x) || !checkCoord(dims.first, dims.second) || rows < 1 || cols < 1 || celly < 0 || cellx < 0) {return;}
+                if (!checkCoord(y, x, false) || !checkCoord(dims.first, dims.second, false) || rows < 1 || cols < 1 || celly < 0 || cellx < 0) {return;}
 
                 // Vertical lines
                 for (unsigned short i = 0; i <= cols; i++) {
@@ -1846,6 +1747,120 @@ namespace npp {
             /// @returns A pair consisting of a y-dimension (rows) and x-dimension (cols)
             std::pair<unsigned short, unsigned short> gGridDims(unsigned short rows, unsigned short cols, unsigned short celly, unsigned short cellx) {return {rows * celly + (rows + 1), cols * cellx + (cols + 1)};}
     } mwin;
+
+    class Button {
+        private:
+            /// @brief Y-dimension (rows) of the button
+            unsigned short DimY;
+            /// @brief X-dimension (cols) of the button
+            unsigned short DimX;
+            /// @brief Y-position (row) of the top-left corner of the button
+            unsigned short PosY;
+            /// @brief X-position (col) of the top-left corner of the button
+            unsigned short PosX;
+
+            bool Clickable = true;
+
+            std::vector<char> Targets;
+
+            /// @brief Check Coordinate - Check to see if the mouse position is within the button's bounds
+            /// @returns True if the mouse is in bounds, false if it is out of bounds
+            bool checkCoord() {return !(Mouse.gy() < PosY || Mouse.gy() >= PosY + DimY || Mouse.gx() < PosX || Mouse.gx() >= PosX + DimX);}
+
+        public:
+            Button(unsigned short y, unsigned short x, unsigned short dimy, unsigned short dimx) {
+                PosY = (y < 0 || y >= LINES) ? 0 : y;
+                PosX = (x < 0 || x >= COLS) ? 0 : x;
+                DimY = (dimy < 1 || LINES - dimy - y < 0) ? LINES - y : dimy;
+                DimX = (dimx < 1 || COLS - dimx - x < 0) ? COLS - x : dimx;
+            }
+            Button (Window &win) {
+                PosY = win.gposy();
+                PosX = win.gposx();
+                DimY = win.gdimy();
+                DimX = win.gdimx();
+            }
+
+            void move(unsigned short y, unsigned short x) {
+                PosY = (y < 0) ? 0 : y;
+                PosY = (y + DimY > LINES) ? LINES - DimY : y;
+                PosX = (x < 0) ? 0 : x;
+                PosX = (x + DimX > COLS) ? COLS - DimX : x;
+            }
+
+            void resize(unsigned short dimy, unsigned short dimx) {
+                DimY = (dimy < 1) ? 1 : dimy;
+                DimY = (dimy + PosY > LINES) ? LINES - PosY : dimy;
+                DimX = (dimx < 1) ? 1 : dimx;
+                DimX = (dimx + PosX > COLS) ? COLS - PosX : dimx;
+            }
+
+            /// @brief Get Y-Dimension - Get the y-dimension (rows) of a button
+            /// @returns The y-dimension (rows) of a button
+            const unsigned short gdimy() {return DimY;}
+            /// @brief Get X-Dimension - Get the x-dimension (cols) of a button
+            /// @returns The x-dimension (cols) of a button
+            const unsigned short gdimx() {return DimX;}
+            /// @brief Get Y-Position - Get the y-position (row) of the top-left corner of a button
+            /// @returns The y-dimension (row) of the top-left corner of a button
+            const unsigned short gposy() {return PosY;}
+            /// @brief Get X-Position - Get the x-position (col) of the top-left corner of a button
+            /// @returns The x-dimension (col) of the top-left corner of a button
+            const unsigned short gposx() {return PosX;}
+    
+            void uclick(bool canClick) {canClick = canClick;}
+
+            /// @brief Check Click - Check to see if the button was pressed or not
+            /// @returns The detected mouse event if the button was pressed or M_UNKNOWN (-1) if the button wasn't
+            const char cclick() {
+                if (!Clickable || !checkCoord() || Mouse.ginput() == M_UNKNOWN) {return M_UNKNOWN;}
+
+                for (unsigned char i = 0; i < Targets.size(); i++) {
+                    if (Mouse.ginput() == Targets[i]) {return Targets[i];}
+                }
+
+                return M_UNKNOWN;
+            }
+
+            /// @brief Target Add - Add a mouse button for the button to look for
+            /// @param target A ncursespp mouse button (such as M1_CLICK)
+            /// @returns True if the new target is added to the list of targets, false if not
+            bool tadd(char target) {
+                if (target < 0 || target >= 25) {return false;}
+
+                for (unsigned char i = 0; i < Targets.size(); i++) {
+                    if (target == Targets[i]) {return true;}
+                }
+
+                Targets.emplace_back(target);
+                return true;
+            }
+
+            bool tremove(char target) {
+                if (target < 0 || target >= 25) {return false;}
+
+                for (unsigned char i = 0; i < Targets.size(); i++) {
+                    if (target == Targets[i]) {
+                        Targets.erase(Targets.begin() + i);
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            bool tset(std::vector<char> targets) {
+                std::vector<char> buff;
+
+                for (unsigned char i = 0; i < targets.size(); i++) {
+                    if (targets[i] < 0 || targets[i] >= 25) {return false;}
+                    buff.emplace_back(targets[i]);
+                }
+
+                Targets = buff;
+                return true;
+            }
+    };
 
     /// @brief Initialize - Acts as the ncursespp version of initscr() with a few other initializations; end() must be called at the end of a program
     /// @param useMouse Whether to set up the ability to take mouse inputs or not
