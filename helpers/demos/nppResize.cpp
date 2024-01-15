@@ -32,12 +32,12 @@ int main() {
 
                         switch (mode) {
                             case 0:
-                                win.move(win.gposy() + (m4 ? -1 : 1), win.gposx());
-                                btn.move(btn.gposy() + (m4 ? -1 : 1), btn.gposx());
+                                win.move(win.gposy() + (m4 ? (win.gposy() == 0 ? 0 : -1) : 1), win.gposx());
+                                btn.move(btn.gposy() + (m4 ? (win.gposy() == 0 ? 0 : -1) : 1), btn.gposx());
                                 break;
                             case 1:
-                                win.move(win.gposy(), win.gposx() + (m4 ? 1 : -1));
-                                btn.move(btn.gposy(), btn.gposx() + (m4 ? 1 : -1));
+                                win.move(win.gposy(), win.gposx() + (m4 ? 1 : (win.gposx() == 0 ? 0 : -1)));
+                                btn.move(btn.gposy(), btn.gposx() + (m4 ? 1 : (win.gposx() == 0 ? 0 : -1)));
                                 break;
                             case 2:
                                 win.reset();
